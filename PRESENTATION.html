@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>eSIM NFT — Transferable Voucher System</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #0a0a0f;
+    color: #e2e8f0;
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+  .slide {
+    min-height: 100vh;
+    padding: 80px 5%;
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-bottom: 1px solid #1e293b;
+  }
+  h1 { font-size: 3.5rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; }
+  h1 .accent { background: linear-gradient(135deg, #22c55e, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  h2 { font-size: 2rem; font-weight: 700; margin-bottom: 1rem; color: #f1f5f9; }
+  h3 { font-size: 1.25rem; font-weight: 600; margin-bottom: 0.5rem; color: #94a3b8; }
+  p { margin-bottom: 1rem; color: #94a3b8; font-size: 1.05rem; }
+  .subtitle { font-size: 1.2rem; color: #64748b; margin-top: 1rem; }
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    background: #1e293b;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+    color: #22c55e;
+  }
+  pre {
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    overflow-x: auto;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    margin: 1rem 0;
+  }
+  pre code { background: none; padding: 0; color: #e2e8f0; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin: 1.5rem 0; }
+  .card {
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: 12px;
+    padding: 1.5rem;
+    transition: border-color 0.2s;
+  }
+  .card:hover { border-color: #22c55e; }
+  .card .label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748b; font-weight: 600; }
+  .card .value { font-size: 1.1rem; font-weight: 600; color: #f1f5f9; margin-top: 0.25rem; }
+  .card .desc { font-size: 0.9rem; color: #64748b; margin-top: 0.5rem; }
+  .flow {
+    display: flex; align-items: center; justify-content: center;
+    flex-wrap: wrap; gap: 0.5rem; margin: 2rem 0;
+  }
+  .flow-step {
+    background: #0f172a; border: 1px solid #1e293b; border-radius: 8px;
+    padding: 0.75rem 1.25rem; font-size: 0.9rem; font-weight: 500;
+  }
+  .flow-arrow { color: #22c55e; font-size: 1.5rem; }
+  .flow-step.active { border-color: #22c55e; background: rgba(34,197,94,0.1); }
+  .badge {
+    display: inline-block;
+    background: rgba(34,197,94,0.1);
+    color: #22c55e;
+    border: 1px solid rgba(34,197,94,0.3);
+    padding: 0.25rem 0.75rem;
+    border-radius: 100px;
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: 0.9rem;
+  }
+  th, td {
+    text-align: left;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #1e293b;
+  }
+  th { color: #64748b; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  td { color: #e2e8f0; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: 500; }
+  .tag-green { background: rgba(34,197,94,0.15); color: #22c55e; }
+  .tag-blue { background: rgba(6,182,212,0.15); color: #06b6d4; }
+  .tag-yellow { background: rgba(234,179,8,0.15); color: #eab308; }
+  .tag-red { background: rgba(239,68,68,0.15); color: #ef4444; }
+  a { color: #06b6d4; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: rgba(10,10,15,0.8); backdrop-filter: blur(12px); border-bottom: 1px solid #1e293b; padding: 0.75rem 5%; display: flex; justify-content: space-between; align-items: center; }
+  .nav a { color: #64748b; font-size: 0.85rem; margin-left: 1.5rem; }
+  .nav a:hover { color: #f1f5f9; text-decoration: none; }
+  .nav .logo { font-weight: 700; color: #f1f5f9; font-size: 1rem; }
+  .hero-badge { margin-bottom: 1rem; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin: 2rem 0; }
+  .stat { text-align: center; padding: 1.5rem; background: #0f172a; border-radius: 12px; border: 1px solid #1e293b; }
+  .stat-num { font-size: 2rem; font-weight: 800; color: #22c55e; }
+  .stat-label { font-size: 0.85rem; color: #64748b; margin-top: 0.25rem; }
+  .footer { text-align: center; padding: 3rem; color: #475569; font-size: 0.85rem; }
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
+  @media (max-width: 768px) {
+    h1 { font-size: 2rem; }
+    .two-col { grid-template-columns: 1fr; }
+    .stats { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <span class="logo">eSIM NFT</span>
+  <div>
+    <a href="#overview">Overview</a>
+    <a href="#contract">Contract</a>
+    <a href="#flow">Flow</a>
+    <a href="#api">Metadata API</a>
+    <a href="#deploy">Deployment</a>
+    <a href="#dev">Development</a>
+  </div>
+</nav>
+
+<!-- Slide 1: Hero -->
+<section class="slide" id="overview">
+  <div class="hero-badge"><span class="badge">Live on Abstract Sepolia Testnet</span></div>
+  <h1>Transferable <span class="accent">eSIM</span> Voucher System</h1>
+  <p class="subtitle">ERC-721 NFTs representing genuine eSIM entitlements — tradeable on OpenSea, activated on-chain.</p>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-num">13</div>
+      <div class="stat-label">Tests Passing</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">3</div>
+      <div class="stat-label">Live Tokens Minted</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num">11124</div>
+      <div class="stat-label">Abstract Chain ID</div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <h3>The Problem</h3>
+      <p>eSIM plans are non-transferable. Buyers who can't travel lose their money. Sellers can't resell unused plans.</p>
+    </div>
+    <div>
+      <h3>The Solution</h3>
+      <p>NFT vouchers that encode real eSIM entitlements. Trade freely before activation. Activate only after purchase.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Slide 2: Contract -->
+<section class="slide" id="contract">
+  <h2>Smart Contract</h2>
+  <p><code>contracts/ESIMNFT.sol</code> — ERC-721 + Enumerable (OpenZeppelin v5, Solidity 0.8.28)</p>
+
+  <div class="grid">
+    <div class="card">
+      <div class="label">Token Standard</div>
+      <div class="value">ERC-721 + Enumerable</div>
+      <div class="desc">Fully compatible with OpenSea, Blur, and all NFT marketplaces.</div>
+    </div>
+    <div class="card">
+      <div class="label">Plan Metadata</div>
+      <div class="value">On-Chain</div>
+      <div class="desc">Provider, planId, country, data (bytes), validity (days) — stored per token.</div>
+    </div>
+    <div class="card">
+      <div class="label">Activation</div>
+      <div class="value">Soulbound Lock</div>
+      <div class="desc">Activated tokens cannot be transferred. ERC-5192 style gating via <code>_update</code>.</div>
+    </div>
+    <div class="card">
+      <div class="label">Operator Role</div>
+      <div class="value">Gasless UX</div>
+      <div class="desc">Platform activates on behalf of users. No ETH needed from buyer.</div>
+    </div>
+    <div class="card">
+      <div class="label">EIP-712 Permits</div>
+      <div class="value">Off-Chain Signatures</div>
+      <div class="desc">User signs an activation permit; platform submits it.</div>
+    </div>
+    <div class="card">
+      <div class="label">Burning</div>
+      <div class="value">Cleanup</div>
+      <div class="desc">Activated tokens can be burned by their owner.</div>
+    </div>
+  </div>
+</section>
+
+<!-- Slide 3: Flow -->
+<section class="slide" id="flow">
+  <h2>Lifecycle</h2>
+  <p>From eSIM provider purchase to mobile activation.</p>
+
+  <div class="flow">
+    <span class="flow-step active">1. Mint</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">2. List</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">3. Buy</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">4. Activate</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">5. Use</span>
+  </div>
+
+  <table>
+    <tr><th>Step</th><th>Who</th><th>Action</th><th>On-Chain</th></tr>
+    <tr><td>1. Mint</td><td><span class="tag tag-green">Platform</span></td><td>Buys eSIM plan from provider (e.g. Airalo), calls <code>mint()</code></td><td>✅ Token created</td></tr>
+    <tr><td>2. List</td><td><span class="tag tag-green">Platform</span></td><td>Lists NFT on OpenSea at cost + margin</td><td>—</td></tr>
+    <tr><td>3. Buy</td><td><span class="tag tag-blue">User</span></td><td>Purchases NFT on OpenSea (standard ERC-721 transfer)</td><td>✅ Ownership changes</td></tr>
+    <tr><td>4. Activate</td><td><span class="tag tag-blue">User</span></td><td>Requests activation on platform → provider API called → <code>activate()</code></td><td>✅ Locked (non-transferable)</td></tr>
+    <tr><td>5. Use</td><td><span class="tag tag-blue">User</span></td><td>Installs eSIM profile on phone using activation code</td><td>—</td></tr>
+  </table>
+
+  <div class="card" style="margin-top:1rem;">
+    <div class="label">Key Property</div>
+    <div class="value">Transferable ⇄ Non-Transferable</div>
+    <div class="desc">Before activation: free trade on any marketplace. After activation: permanently soulbound.</div>
+  </div>
+</section>
+
+<!-- Slide 4: Metadata API -->
+<section class="slide" id="api">
+  <h2>Metadata API</h2>
+  <p>Vercel serverless function at <code>api/metadata/[tokenId].ts</code></p>
+
+  <div class="two-col">
+    <div>
+      <h3>Reads On-Chain</h3>
+      <p>Uses <code>viem</code> to call <code>getPlan(tokenId)</code> live on Abstract Testnet. Returns standard ERC-721 metadata that OpenSea renders.</p>
+      <table>
+        <tr><th>Field</th><th>Source</th></tr>
+        <tr><td><code>name</code></td><td>Contract <code>name()</code> + token ID</td></tr>
+        <tr><td><code>description</code></td><td>Country, data, validity, provider</td></tr>
+        <tr><td><code>image</code></td><td>Inline SVG (data URI)</td></tr>
+        <tr><td><code>attributes</code></td><td>All plan fields + activation status</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>Example Response</h3>
+      <pre><code>GET /api/metadata/2
+
+{
+  "name": "Transferable eSIM Voucher #2",
+  "description": "Japan eSIM — 1 GB for 7 days via Airalo. This voucher has been redeemed.",
+  "image": "data:image/svg+xml;base64,...",
+  "attributes": [
+    { "trait_type": "Country", "value": "Japan" },
+    { "trait_type": "Data", "value": "1 GB" },
+    { "trait_type": "Validity", "value": "7 days" },
+    { "trait_type": "Status", "value": "Activated" }
+  ]
+}</code></pre>
+    </div>
+  </div>
+  <p style="margin-top:1rem;">
+    <span class="tag tag-blue">Preview: </span>
+    <a href="https://esim-nft-metadata.vercel.app/api/metadata/2" target="_blank">esim-nft-metadata.vercel.app/api/metadata/2</a>
+  </p>
+</section>
+
+<!-- Slide 5: Deployment -->
+<section class="slide" id="deploy">
+  <h2>Deployment</h2>
+
+  <table>
+    <tr><th>Instance</th><th>Chain</th><th>Address</th></tr>
+    <tr>
+      <td>Abstract Sepolia Testnet</td>
+      <td><span class="tag tag-yellow">11124</span></td>
+      <td><code>0x876fdcbd21401ad13778de574ef7533ed603983d</code></td>
+    </tr>
+    <tr>
+      <td>Metadata API</td>
+      <td><span class="tag tag-green">Vercel</span></td>
+      <td><a href="https://esim-nft-metadata.vercel.app" target="_blank">esim-nft-metadata.vercel.app</a></td>
+    </tr>
+    <tr>
+      <td>Block Explorer</td>
+      <td><span class="tag tag-blue">Abscann</span></td>
+      <td><a href="https://sepolia.abscan.org/address/0x876fdcbd21401ad13778de574ef7533ed603983d" target="_blank">sepolia.abscan.org</a></td>
+    </tr>
+    <tr>
+      <td>Source Verification</td>
+      <td><span class="tag tag-green">Sourcify</span></td>
+      <td><a href="https://sourcify.dev/server/repo-ui/11124/0x876fdcbd21401ad13778de574ef7533ed603983d" target="_blank">Sourcify Explorer</a></td>
+    </tr>
+  </table>
+
+  <div class="grid" style="margin-top:1.5rem;">
+    <div class="card">
+      <div class="label">Token URI Base</div>
+      <div class="value"><code>https://www.1esim.xyz/api/metadata/</code></div>
+      <div class="desc">Set via <code>setBaseURI()</code> — owner-only.</div>
+    </div>
+    <div class="card">
+      <div class="label">Operator</div>
+      <div class="value"><code>0x413C82FA...4a7E0b42d</code></div>
+      <div class="desc">Deployer can activate tokens on behalf of users.</div>
+    </div>
+    <div class="card">
+      <div class="label">Latest Token</div>
+      <div class="value">#2 (Japan, 1GB, Activated)</div>
+      <div class="desc">Minted and activated during integration testing.</div>
+    </div>
+  </div>
+</section>
+
+<!-- Slide 6: Development -->
+<section class="slide" id="dev">
+  <h2>Development</h2>
+
+  <div class="two-col">
+    <div>
+      <h3>Commands</h3>
+      <table>
+        <tr><th>Command</th><th>Description</th></tr>
+        <tr><td><code>bun run compile</code></td><td>Compile Solidity</td></tr>
+        <tr><td><code>bun run test</code></td><td>Run 13 tests</td></tr>
+        <tr><td><code>bun run deploy:testnet</code></td><td>Deploy to Abstract Sepolia</td></tr>
+        <tr><td><code>bun run backend list-plans</code></td><td>List mock eSIM plans</td></tr>
+        <tr><td><code>bun run backend mint</code></td><td>Mint an eSIM NFT</td></tr>
+        <tr><td><code>bun run backend activate</code></td><td>Activate an eSIM</td></tr>
+      </table>
+    </div>
+    <div>
+      <h3>Project Structure</h3>
+      <pre><code>eSIMNFT/
+├── contracts/          # Solidity
+├── test/               # node:test tests
+├── scripts/            # Deploy & interact
+├── backend/            # eSIM provider integration
+│   └── providers/      # IESIMProvider + mocks
+├── api/metadata/       # Vercel serverless
+└── hardhat.config.ts   # Abstract config</code></pre>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:1.5rem;">
+    <div class="label">Tech Stack</div>
+    <div class="value">Solidity 0.8.28 · Hardhat v3 · viem · bun · Vercel · Abstract Chain</div>
+    <div class="desc">OpenZeppelin v5 (ERC-721 + Enumerable + Ownable + EIP712) · hardhat-toolbox-viem</div>
+  </div>
+</section>
+
+<div class="footer">
+  eSIM NFT — v1.0.0 — Built on Abstract Chain
+</div>
+
+</body>
+</html>
