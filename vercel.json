@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/metadata/[tokenId].ts": {
+      "maxDuration": 10
+    }
+  }
+}
