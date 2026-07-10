@@ -45,8 +45,8 @@ contract ESIMNFT is ERC721, ERC721Enumerable, Ownable, EIP712 {
     // Operator role for gasless activation
     mapping(address => bool) private _operators;
 
-    // Track burned tokens
-    uint256[] private _burnedTokens;
+    // Total number of burned tokens
+    uint256 private _burnedCount;
 
     event PlanMinted(uint256 indexed tokenId, string provider, string planId, string country, string countryCode);
     event PlanActivated(uint256 indexed tokenId, address indexed activator);
@@ -84,13 +84,15 @@ contract ESIMNFT is ERC721, ERC721Enumerable, Ownable, EIP712 {
         uint256 validityDays
     ) external onlyOwner returns (uint256 tokenId) {
         tokenId = _nextTokenId++;
-        _safeMint(to, tokenId);
+        // Write plan data BEFORE _safeMint to prevent reentrancy
+        // observing an incomplete token
         _tokenProvider[tokenId] = provider;
         _tokenPlanId[tokenId] = planId;
         _tokenCountry[tokenId] = country;
         _tokenCountryCode[tokenId] = countryCode;
         _tokenDataBytes[tokenId] = dataBytes;
         _tokenValidityDays[tokenId] = validityDays;
+        _safeMint(to, tokenId);
 
         emit PlanMinted(tokenId, provider, planId, country, countryCode);
     }
@@ -135,7 +137,14 @@ contract ESIMNFT is ERC721, ERC721Enumerable, Ownable, EIP712 {
     function burn(uint256 tokenId) external {
         if (ownerOf(tokenId) != msg.sender) revert NotTokenOwner();
         _burn(tokenId);
-        _burnedTokens.push(tokenId);
+        delete _tokenProvider[tokenId];
+        delete _tokenPlanId[tokenId];
+        delete _tokenCountry[tokenId];
+        delete _tokenCountryCode[tokenId];
+        delete _tokenDataBytes[tokenId];
+        delete _tokenValidityDays[tokenId];
+        delete _tokenActivation[tokenId];
+        _burnedCount++;
     }
 
     function getPlan(uint256 tokenId) external view returns (ESIMPlan memory) {
@@ -163,8 +172,8 @@ contract ESIMNFT is ERC721, ERC721Enumerable, Ownable, EIP712 {
         return _nextTokenId;
     }
 
-    function getBurnedTokens() external view returns (uint256[] memory) {
-        return _burnedTokens;
+    function totalBurned() external view returns (uint256) {
+        return _burnedCount;
     }
 
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
@@ -228,6 +237,7 @@ contract ESIMNFT is ERC721, ERC721Enumerable, Ownable, EIP712 {
         uint256 deadline,
         bytes calldata signature
     ) external {
+        if (msg.sender != activator) revert NotOperator();
         if (block.timestamp > deadline) revert("Permit expired");
         if (_tokenActivation[tokenId].activated) revert AlreadyActivated();
 

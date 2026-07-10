@@ -211,4 +211,81 @@ describe("ESIMNFT", async () => {
       assert.equal(uri, "https://api.esim.example/metadata/0");
     });
   });
+
+  describe("Audit fixes", async () => {
+    it("should prevent reentrancy during mint (plan data written before _safeMint)", async () => {
+      const { viem, contract, publicClient, owner } = await setup();
+      const [deployer] = await viem.getWalletClients();
+
+      const attacker = await viem.deployContract(
+        "contracts/test/ReentrancyAttacker.sol:ReentrancyAttacker",
+        [contract.address]
+      );
+
+      const hash = await contract.write.mint(
+        [attacker.address, PLAN.provider, PLAN.planId, PLAN.country, PLAN.countryCode, PLAN.dataBytes, PLAN.validityDays],
+        { account: owner.account }
+      );
+      await publicClient.waitForTransactionReceipt({ hash });
+
+      // Attacker should have been able to activate during callback,
+      // but plan data should already be populated thanks to checks-effects-interactions
+      const isActivated = await contract.read.isActivated([0n]);
+      assert.equal(isActivated, true, "token should be activated by reentrant call");
+
+      // Plan data must be readable even after reentrant activation
+      const plan = await contract.read.getPlan([0n]);
+      assert.equal(plan.provider, PLAN.provider);
+      assert.equal(plan.planId, PLAN.planId);
+      assert.equal(plan.country, PLAN.country);
+    });
+
+    it("should clear plan metadata on burn", async () => {
+      const { contract, publicClient, owner, user1 } = await setup();
+      await mint(contract, publicClient, owner, user1);
+      await contract.write.activate([0n], { account: user1.account });
+
+      // Burn clears storage — getPlan should revert (token doesn't exist)
+      const burnHash = await contract.write.burn([0n], { account: user1.account });
+      await publicClient.waitForTransactionReceipt({ hash: burnHash });
+
+      await assert.rejects(async () => contract.read.getPlan([0n]));
+      await assert.rejects(async () => contract.read.isActivated([0n]));
+
+      // totalBurned should be 1
+      assert.equal(await contract.read.totalBurned(), 1n);
+    });
+
+    it("should increment totalBurned on each burn", async () => {
+      const { contract, publicClient, owner, user1 } = await setup();
+      await mint(contract, publicClient, owner, user1);
+      await contract.write.burn([0n], { account: user1.account });
+
+      assert.equal(await contract.read.totalBurned(), 1n);
+
+      // Mint and burn another
+      await mint(contract, publicClient, owner, user1);
+      await contract.write.burn([1n], { account: user1.account });
+
+      assert.equal(await contract.read.totalBurned(), 2n);
+    });
+
+    it("should reject activateWithPermit when caller is not activator", async () => {
+      const { viem, contract, publicClient, owner, user1, user2 } = await setup();
+      await mint(contract, publicClient, owner, user1);
+
+      // user2 tries to call activateWithPermit as a different activator
+      const deadline = BigInt(Math.floor(Date.now() / 1000) + 3600);
+      const tokenId = 0n;
+
+      await viem.assertions.revertWithCustomError(
+        contract.write.activateWithPermit(
+          [tokenId, user1.account.address, deadline, "0x"],
+          { account: user2.account }
+        ),
+        contract,
+        "NotOperator"
+      );
+    });
+  });
 });
