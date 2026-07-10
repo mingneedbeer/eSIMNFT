@@ -51,7 +51,7 @@ contract ESIMNFT is ERC721, ERC721Enumerable, Ownable, EIP712 {
     event PlanMinted(uint256 indexed tokenId, string provider, string planId, string country, string countryCode);
     event PlanActivated(uint256 indexed tokenId, address indexed activator);
     event OperatorSet(address indexed operator, bool indexed enabled);
-    event PlanMetadataUpdated(uint256 indexed tokenId, string country, uint256 dataBytes, uint256 validityDays);
+    event BaseURIUpdated(string uri);
 
     error NotTokenOwner();
     error AlreadyActivated();
@@ -134,8 +134,8 @@ contract ESIMNFT is ERC721, ERC721Enumerable, Ownable, EIP712 {
 
     function burn(uint256 tokenId) external {
         if (ownerOf(tokenId) != msg.sender) revert NotTokenOwner();
-        _burnedTokens.push(tokenId);
         _burn(tokenId);
+        _burnedTokens.push(tokenId);
     }
 
     function getPlan(uint256 tokenId) external view returns (ESIMPlan memory) {
@@ -174,6 +174,7 @@ contract ESIMNFT is ERC721, ERC721Enumerable, Ownable, EIP712 {
 
     function setBaseURI(string calldata baseURI) external onlyOwner {
         _baseTokenURI = baseURI;
+        emit BaseURIUpdated(baseURI);
     }
 
     // ---- ERC-5192 style: block transfer of activated tokens ----
@@ -191,7 +192,7 @@ contract ESIMNFT is ERC721, ERC721Enumerable, Ownable, EIP712 {
     }
 
     function _exists(uint256 tokenId) internal view returns (bool) {
-        return tokenId < _nextTokenId;
+        return _ownerOf(tokenId) != address(0);
     }
 
     function supportsInterface(bytes4 interfaceId)

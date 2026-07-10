@@ -190,6 +190,17 @@ describe("ESIMNFT", async () => {
         async () => contract.read.ownerOf([0n])
       );
     });
+
+    it("should reject queries for burned tokens", async () => {
+      const { contract, publicClient, owner, user1 } = await setup();
+      await mint(contract, publicClient, owner, user1);
+      await contract.write.activate([0n], { account: user1.account });
+      await contract.write.burn([0n], { account: user1.account });
+
+      await assert.rejects(async () => contract.read.getPlan([0n]));
+      await assert.rejects(async () => contract.read.isActivated([0n]));
+      await assert.rejects(async () => contract.read.tokenURI([0n]));
+    });
   });
 
   describe("TokenURI", async () => {
