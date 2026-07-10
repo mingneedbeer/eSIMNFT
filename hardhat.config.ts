@@ -36,28 +36,9 @@ export default defineConfig({
       accounts: [PRIVATE_KEY],
     },
   },
-  etherscan: {
-    apiKey: {
-      abstractTestnet: process.env.ABSCAN_API_KEY || "",
-      abstract: process.env.ABSCAN_API_KEY || "",
+  verify: {
+    etherscan: {
+      apiKey: process.env.ABSCAN_API_KEY || process.env.ETHERSCAN_API_KEY || "",
     },
-    customChains: [
-      {
-        network: "abstractTestnet",
-        chainId: 11124,
-        urls: {
-          apiURL: "https://api-sepolia.abscan.org/api",
-          browserURL: "https://sepolia.abscan.org",
-        },
-      },
-      {
-        network: "abstract",
-        chainId: 2741,
-        urls: {
-          apiURL: "https://api.abscan.org/api",
-          browserURL: "https://abscan.org",
-        },
-      },
-    ],
   },
 });
